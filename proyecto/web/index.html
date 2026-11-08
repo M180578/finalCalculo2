@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Frontera de Normalidad</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lectura tipo cuaderno de ingeniería; figuras fijas (sticky) que cambian con el scroll, texto en pasos a un costado. */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --ink:#0e1b2d; --muted:#566880; --line:#cdd6e1;
+  --normal:#0b7c76; --alert:#d4460c; --gold:#b9830a; --grid:rgba(14,27,45,.07);
+  --f-display:'Archivo','Arial Narrow',Arial,sans-serif;
+  --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --nav-h:46px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#09111d; --surface:#101c2e; --ink:#e6edf6; --muted:#95a6bc; --line:#25374e;
+  --normal:#3cc6bf; --alert:#ff7b3f; --gold:#f2b84b; --grid:rgba(230,237,246,.06); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#09111d; --surface:#101c2e; --ink:#e6edf6; --muted:#95a6bc; --line:#25374e;
+  --normal:#3cc6bf; --alert:#ff7b3f; --gold:#f2b84b; --grid:rgba(230,237,246,.06); color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:calc(var(--nav-h) + 12px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:60}
+a{color:var(--normal)}
+:focus-visible{outline:2px solid var(--alert);outline-offset:3px;border-radius:3px}
+.wrap{max-width:1180px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);font-stretch:75%;font-weight:800;line-height:1.02;letter-spacing:-.01em;text-wrap:balance;margin:0}
+h2{font-size:clamp(2rem,4.6vw,3.4rem)}
+h3{font-size:1.35rem;font-stretch:85%;font-weight:700;line-height:1.15}
+p{margin:0 0 1em;max-width:62ch}
+.mono{font-family:var(--f-mono)}
+.eyebrow{font-family:var(--f-mono);font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 .9rem}
+mjx-container{color:inherit}
+mjx-container[display="true"]{margin:.9em 0!important;overflow-x:auto;overflow-y:hidden;max-width:100%}
+
+/* ---- nav ---- */
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;height:var(--nav-h);display:flex;align-items:center;gap:1.4rem;
+  margin:0 -16px;padding:0 16px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap}
+nav b{font-family:var(--f-display);font-stretch:75%;font-weight:800;letter-spacing:.02em;margin-right:.4rem}
+nav a{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-decoration:none;padding:.3rem 0;border-bottom:2px solid transparent}
+nav a:hover,nav a.on{color:var(--ink);border-bottom-color:var(--alert)}
+
+/* ---- hero ---- */
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:2rem;align-items:center;padding-block:3.5rem 3rem}
+.hero h1{font-size:clamp(2.3rem,5.6vw,4.8rem);font-stretch:62%;text-transform:uppercase;overflow-wrap:anywhere}
+.hero>div{min-width:0}
+.hero h1 em{font-style:normal;color:var(--alert)}
+.hero .sub{font-size:1.15rem;color:var(--muted);margin-top:1.4rem;max-width:46ch}
+.meta{display:flex;flex-wrap:wrap;gap:.4rem 1.6rem;margin-top:1.8rem;font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
+.meta span b{color:var(--ink);font-weight:500}
+.herofig{position:relative;aspect-ratio:1/1;max-width:100%;border:1px solid var(--line);background:var(--surface);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:36px 36px}
+.herofig canvas{position:absolute;inset:0;width:100%;height:100%}
+.herofig figcaption{position:absolute;left:10px;bottom:8px;font-family:var(--f-mono);font-size:.68rem;color:var(--muted);background:var(--surface);padding:2px 6px}
+
+/* ---- secciones ---- */
+section{padding-block:4.5rem}
+section.rule{border-top:1px solid var(--line)}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3rem;align-items:start}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.4rem 1.6rem;margin:1.6rem 0 0}
+.facts div{border-top:2px solid var(--ink);padding-top:.5rem}
+.facts dt{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.facts dd{margin:.1rem 0 0;font-family:var(--f-display);font-stretch:75%;font-weight:800;font-size:2.1rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.shot{margin:0;background:var(--surface);border:1px solid var(--line);padding:10px}
+.shot img{display:block;width:100%;height:auto}
+.shot figcaption{font-size:.82rem;color:var(--muted);padding:.6rem .3rem .1rem;line-height:1.45}
+.tablewrap{overflow-x:auto;margin:1rem 0 1.4rem}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.95rem}
+th,td{text-align:right;padding:.55rem .8rem;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.03em;color:var(--muted);border-bottom:2px solid var(--ink);font-weight:500}
+.callout{border-left:4px solid var(--normal);background:var(--surface);padding:1rem 1.2rem;margin:1.4rem 0;max-width:62ch}
+.callout.warn{border-left-color:var(--alert)}
+.callout p:last-child{margin:0}
+
+/* ---- scrollytelling ---- */
+.unit-head{margin-bottom:2.4rem;max-width:760px}
+.unit-head .lead{font-size:1.15rem;color:var(--muted)}
+.scrolly{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:2.4rem;align-items:start}
+.stage{position:sticky;top:calc(var(--nav-h) + env(safe-area-inset-top,0px) + 12px);height:calc(100vh - var(--nav-h) - env(safe-area-inset-top,0px) - 28px);max-height:760px;
+  display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);order:2}
+.stage .tag{display:flex;justify-content:space-between;gap:1rem;padding:.55rem .9rem;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:.7rem;letter-spacing:.04em;color:var(--muted)}
+.stage canvas{flex:1;min-height:0;width:100%;display:block;touch-action:pan-y}
+.readout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem 1rem;margin:0;padding:.7rem .9rem .8rem;border-top:1px solid var(--line);min-height:4.6rem}
+.readout div{min-width:0}
+.readout dt{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.02em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.readout dd{margin:0;font-family:var(--f-mono);font-size:.92rem;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.readout dd.hot{color:var(--alert)} .readout dd.ok{color:var(--normal)}
+.steps{order:1;min-width:0}
+.step{min-height:92vh;display:flex;align-items:center}
+.step:last-child{min-height:70vh}
+.card{background:var(--surface);border:1px solid var(--line);padding:1.5rem 1.6rem;opacity:.42;transition:opacity .35s,border-color .35s;width:100%}
+.step.on .card{opacity:1;border-color:var(--ink)}
+.card .n{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--alert);margin:0 0 .5rem}
+.card p{margin:.7em 0 0;font-size:.98rem}
+.card .hint{font-family:var(--f-mono);font-size:.74rem;color:var(--muted)}
+
+/* ---- resultados ---- */
+.bars{display:grid;gap:1.6rem;margin:2rem 0 2.4rem}
+.bar .lbl{display:flex;justify-content:space-between;gap:1rem;font-family:var(--f-mono);font-size:.78rem;margin-bottom:.35rem;flex-wrap:wrap}
+.bar .track{display:flex;height:44px;border:1px solid var(--ink);background:var(--surface)}
+.bar .in{background:var(--normal);color:#fff;display:flex;align-items:center;padding:0 .7rem;font-family:var(--f-mono);font-size:.8rem;min-width:0;overflow:hidden;white-space:nowrap}
+.bar .out{background:var(--alert);color:#fff;display:flex;align-items:center;justify-content:flex-end;padding:0 .5rem;font-family:var(--f-mono);font-size:.8rem;min-width:2px;overflow:hidden;white-space:nowrap;flex:1}
+:root[data-theme="dark"] .bar .in,:root[data-theme="dark"] .bar .out{color:#06101c}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .bar .in,:root:not([data-theme="light"]) .bar .out{color:#06101c}}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1.2rem 1.4rem}
+.metrics div{border-top:2px solid var(--ink);padding-top:.5rem}
+.metrics dt{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.04em;color:var(--muted)}
+.metrics dd{margin:.1rem 0 0;font-family:var(--f-display);font-stretch:75%;font-weight:800;font-size:2rem;font-variant-numeric:tabular-nums}
+.metrics dd.hot{color:var(--alert)}
+.metrics small{display:block;font-family:var(--f-mono);font-size:.7rem;color:var(--muted);font-weight:400}
+
+/* ---- cierre ---- */
+.gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.2rem}
+ol.concl{margin:0;padding-left:1.3rem;max-width:64ch} ol.concl li{margin-bottom:.8rem}
+.btn{display:inline-block;font-family:var(--f-mono);font-size:.82rem;padding:.7rem 1.1rem;border:2px solid var(--ink);color:var(--ink);text-decoration:none;background:var(--surface)}
+.btn:hover{background:var(--ink);color:var(--bg)}
+.people{columns:2;column-gap:2rem;padding:0;list-style:none;margin:.6rem 0 1.4rem;font-size:.95rem}
+footer{padding-block:2.5rem 4rem;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width:900px){
+  body{font-size:16px}
+  .hero,.cols{grid-template-columns:minmax(0,1fr)}
+  .hero{padding-block:2rem}
+  .scrolly{grid-template-columns:minmax(0,1fr);gap:0}
+  .stage{order:0;height:47vh;max-height:none;top:calc(var(--nav-h) + env(safe-area-inset-top,0px));z-index:5}
+  .stage .tag{display:none}
+  .readout{grid-template-columns:repeat(3,minmax(0,1fr));padding:.4rem .6rem .5rem;min-height:0;gap:.2rem .6rem}
+  .readout dd{font-size:.8rem}
+  .step{min-height:88vh;display:block}
+  .step:last-child{min-height:78vh}
+  .card{position:sticky;top:calc(var(--nav-h) + env(safe-area-inset-top,0px) + 47vh + 10px);padding:1rem 1.1rem;opacity:1;max-height:calc(53vh - var(--nav-h) - 24px);overflow-y:auto;margin-top:14px}
+  .card h3{font-size:1.15rem} .card p{font-size:.92rem}
+  .step:not(.on) .card{opacity:.55}
+  section{padding-block:3rem}
+  .gallery{grid-template-columns:minmax(0,1fr)}
+  .people{columns:1}
+}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}.card{transition:none}}
+</style>
+
+<div class="wrap">
+<nav aria-label="Secciones">
+  <b>E<sub>d</sub> ≤ c</b>
+  <a href="#contexto">Contexto</a><a href="#modelo">Modelo</a><a href="#unidad-1">Unidad 1</a><a href="#unidad-2">Unidad 2</a><a href="#unidad-3">Unidad 3</a><a href="#resultados">Resultados</a><a href="#cierre">Cierre</a>
+</nav>
+
+<header class="hero">
+  <div>
+    <p class="eyebrow">Cálculo II · TPAG 2026 · Grupo N.º 2</p>
+    <h1>Frontera de <em>normalidad</em></h1>
+    <p class="sub">Geometría de la elipse que separa lo habitual de lo sospechoso en el plano de componentes principales V₁–V₂ de 284.807 transacciones con tarjeta.</p>
+    <div class="meta">
+      <span>UNSL · <b>Lic. en Análisis y Gestión de Datos</b></span>
+      <span>Docente · <b>Mgtr. Ing. Martín Garciarena Ucelay</b></span>
+    </div>
+  </div>
+  <figure class="herofig" style="margin:0">
+    <canvas id="hero" aria-label="Nube de puntos simulada dentro de una elipse de normalidad"></canvas>
+    <figcaption>Ilustración: puntos simulados con los parámetros del informe</figcaption>
+  </figure>
+</header>
+
+<!-- ============ CONTEXTO ============ -->
+<section id="contexto" class="rule">
+  <div class="cols">
+    <div>
+      <p class="eyebrow">El problema</p>
+      <h2>Muy pocos fraudes, mucho ruido</h2>
+      <p style="margin-top:1.4rem">En un flujo habitual de pagos, menos del 0,2 % de las operaciones son fraudulentas. Un clasificador supervisado tiende a aprender la clase mayoritaria y a ignorar el resto.</p>
+      <p>El informe toma otro camino: describir con rigor la masa de operaciones <strong>legítimas</strong> y trazar a su alrededor una frontera geométrica. Lo que cae afuera es una alerta.</p>
+      <dl class="facts">
+        <div><dt>Transacciones</dt><dd>284.807</dd></div>
+        <div><dt>Fraudes (Class = 1)</dt><dd>492</dd></div>
+        <div><dt>Legítimas (Class = 0)</dt><dd>284.315</dd></div>
+        <div><dt>Variables usadas</dt><dd>V₁, V₂</dd></div>
+      </dl>
+      <p class="mono" style="font-size:.78rem;color:var(--muted);margin-top:1.4rem">Datos: ULB / Kaggle, <em>Credit Card Fraud Detection</em>.</p>
+    </div>
+    <figure class="shot">
+      <img src="img/grafico_1.jpg" alt="Dispersión de transacciones legítimas y fraudulentas en el plano V1-V2 con la frontera elíptica" width="1600" height="1274" loading="lazy">
+      <figcaption>Datos reales en el plano V₁–V₂ con la frontera E<sub>d</sub> = 5,991. Los conteos usan todas las filas; el muestreo es solo para dibujar.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============ MODELO ============ -->
+<section id="modelo" class="rule">
+  <p class="eyebrow">El modelo</p>
+  <h2 style="max-width:14ch">Una distancia estandarizada</h2>
+  <div class="cols" style="margin-top:2rem">
+    <div>
+      <p>Para cada transacción se mide cuántas desviaciones estándar se aleja del centroide de las operaciones legítimas, en cada componente:</p>
+      <p>\[E_d(V_1,V_2)=\frac{(V_1-\mu_1)^2}{\sigma_1^2}+\frac{(V_2-\mu_2)^2}{\sigma_2^2}\]</p>
+      <p>La frontera es la curva de nivel \(E_d=c\) con \(c=5{,}991\), el percentil 95 de una \(\chi^2\) con 2 grados de libertad. Es una elipse alineada con los ejes, de semiejes</p>
+      <p>\[a=\sigma_1\sqrt c\approx 4{,}7235\qquad b=\sigma_2\sqrt c\approx 4{,}0047\]</p>
+      <div class="callout">
+        <p><strong>Modelo diagonal.</strong> La covarianza observada entre V₁ y V₂ es 0,0710 y la correlación apenas 0,0225. Se desprecia el término cruzado: es una aproximación diagonal de Mahalanobis.</p>
+      </div>
+    </div>
+    <div>
+      <p class="eyebrow" style="margin-bottom:.2rem">Parámetros · transacciones legítimas (N = 284.315)</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th></th><th>V₁</th><th>V₂</th></tr></thead>
+        <tbody>
+          <tr><td>Media μ</td><td>0,00825774</td><td>−0,00627086</td></tr>
+          <tr><td>Desvío σ (ddof = 1)</td><td>1,92981405</td><td>1,63614605</td></tr>
+          <tr><td>Semieje</td><td>a = 4,72351310</td><td>b = 4,00471605</td></tr>
+        </tbody></table></div>
+      <p style="color:var(--muted);font-size:.92rem">Las tres unidades del curso se apoyan en esta única curva: se la parametriza (Unidad 1), se estudia la superficie \(E_d\) que la genera (Unidad 2) y se integra sobre la región que encierra (Unidad 3).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ UNIDAD 1 ============ -->
+<section id="unidad-1" class="rule">
+  <div class="unit-head">
+    <p class="eyebrow">Unidad 1 · Funciones vectoriales</p>
+    <h2>Recorrer la frontera</h2>
+    <p class="lead" style="margin-top:1.2rem">Bajá por la página: el parámetro <em>t</em> avanza de 0 a 2π en cada paso y la figura sigue al punto que recorre la elipse.</p>
+  </div>
+  <div class="scrolly" id="s1">
+    <div class="stage"><div class="tag"><span>Figura 1 · frontera r(t)</span><span id="s1tag">—</span></div><canvas id="c1"></canvas><dl class="readout" id="r1"></dl></div>
+    <div class="steps">
+      <div class="step"><div class="card"><p class="n">Paso 1 · parametrización</p><h3>Una función vectorial para la elipse</h3>
+        <p>La frontera se describe con un solo parámetro angular, centrada en el centroide \(\vec\mu\):</p>
+        <p>\[\vec r(t)=\langle \mu_1+a\cos t,\ \mu_2+b\sin t\rangle,\quad t\in[0,2\pi]\]</p>
+        <p class="hint">Abajo: las dos componentes en función de t.</p></div></div>
+      <div class="step"><div class="card"><p class="n">Paso 2 · cinemática</p><h3>Velocidad y aceleración</h3>
+        <p>Derivar componente a componente da el vector tangente; derivar otra vez, la aceleración, que apunta siempre al centroide:</p>
+        <p>\[\vec v(t)=\langle -a\sin t,\ b\cos t\rangle,\qquad \vec a(t)=-(\vec r(t)-\vec\mu)\]</p>
+        <p>La rapidez \(\lVert\vec v\rVert=\sqrt{a^2\sin^2t+b^2\cos^2t}\) es máxima en el eje mayor.</p></div></div>
+      <div class="step"><div class="card"><p class="n">Paso 3 · curvatura</p><h3>Cuánto se dobla la curva</h3>
+        <p>\[\kappa(t)=\frac{ab}{\left(a^2\sin^2t+b^2\cos^2t\right)^{3/2}}\]</p>
+        <p>El círculo punteado es el osculador, de radio \(1/\kappa\). Es más cerrado en los vértices del eje mayor \((\kappa_{\max}=a/b^2\approx0{,}2945)\) y más abierto en los del menor \((\kappa_{\min}=b/a^2\approx0{,}1795)\).</p></div></div>
+      <div class="step"><div class="card"><p class="n">Paso 4 · longitud de arco</p><h3>El perímetro de la región de normalidad</h3>
+        <p>\[L=\int_0^{2\pi}\lVert\vec v(t)\rVert\,dt\approx 27{,}4671\]</p>
+        <p>Es una integral elíptica completa de segunda especie: no tiene primitiva elemental, así que se evaluó numéricamente con <span class="mono">scipy.integrate.quad</span>. La curva coloreada es lo recorrido hasta t.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ UNIDAD 2 ============ -->
+<section id="unidad-2" class="rule">
+  <div class="unit-head">
+    <p class="eyebrow">Unidad 2 · Funciones de varias variables</p>
+    <h2>La superficie del error</h2>
+    <p class="lead" style="margin-top:1.2rem">Las elipses son curvas de nivel de \(E_d\). En los pasos 2 y 4 también podés mover el cursor sobre la figura.</p>
+  </div>
+  <div class="scrolly" id="s2">
+    <div class="stage"><div class="tag"><span>Figura 2 · curvas de nivel</span><span id="s2tag">—</span></div><canvas id="c2"></canvas><dl class="readout" id="r2"></dl></div>
+    <div class="steps">
+      <div class="step"><div class="card"><p class="n">Paso 1 · curvas de nivel</p><h3>Cada elipse es un valor de E<sub>d</sub></h3>
+        <p>Los niveles \(E_d=k\) son elipses concéntricas de semiejes \(\sigma_1\sqrt k\) y \(\sigma_2\sqrt k\). La línea punteada es el umbral \(c=5{,}991\); el interior es la región de normalidad.</p></div></div>
+      <div class="step"><div class="card"><p class="n">Paso 2 · gradiente</p><h3>La dirección de mayor aumento del riesgo</h3>
+        <p>\[\nabla E_d=\Big\langle \tfrac{2(V_1-\mu_1)}{\sigma_1^2},\ \tfrac{2(V_2-\mu_2)}{\sigma_2^2}\Big\rangle\]</p>
+        <p>Es perpendicular a cada curva de nivel (el segmento corto es la tangente) y se hace más largo cuanto más lejos está el punto del centroide.</p>
+        <p class="hint">Mové el cursor sobre la figura para evaluar cualquier punto.</p></div></div>
+      <div class="step"><div class="card"><p class="n">Paso 3 · derivada direccional</p><h3>Cambio en una dirección elegida</h3>
+        <p>\[D_{\vec u}E_d=\nabla E_d\cdot\vec u\]</p>
+        <p>En el vértice del eje mayor \(P=(\mu_1+a,\mu_2)\) el gradiente es \(\langle 2\sqrt c/\sigma_1,\,0\rangle\). Con \(\vec u=\langle1,0\rangle\) vale \(2\sqrt c/\sigma_1\approx2{,}5367\), el máximo posible. Girá \(\vec u\) y la tasa cae como un coseno, hasta anularse a 90°.</p></div></div>
+      <div class="step"><div class="card"><p class="n">Paso 4 · hessiana</p><h3>El centroide es el mínimo global</h3>
+        <p>El único punto crítico es \(\nabla E_d=\vec 0\), el centroide. La hessiana es constante y diagonal:</p>
+        <p>\[H=\begin{pmatrix}0{,}5370&0\\0&0{,}7471\end{pmatrix},\quad \det H\approx0{,}4012>0\]</p>
+        <p>Como \(H\) es definida positiva en todo ℝ², la superficie es estrictamente convexa y \(E_d(\vec\mu)=0\) es el mínimo global.</p>
+        <p class="hint">Mové el cursor: el error baja hacia 0 en el centroide.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ UNIDAD 3 ============ -->
+<section id="unidad-3" class="rule">
+  <div class="unit-head">
+    <p class="eyebrow">Unidad 3 · Integrales múltiples y campos vectoriales</p>
+    <h2>Cuánta masa y cuánto flujo</h2>
+    <p class="lead" style="margin-top:1.2rem">Dos cálculos sobre la misma región \(R=\{E_d\le c\}\): la probabilidad que encierra y el flujo del campo de anomalía por su borde.</p>
+  </div>
+  <div class="scrolly" id="s3">
+    <div class="stage"><div class="tag"><span>Figura 3 · región R</span><span id="s3tag">—</span></div><canvas id="c3"></canvas><dl class="readout" id="r3"></dl></div>
+    <div class="steps">
+      <div class="step"><div class="card"><p class="n">Paso 1 · masa de probabilidad</p><h3>Integral doble en polares generalizadas</h3>
+        <p>Con \(V_1=\mu_1+\sigma_1 r\cos\theta\), \(V_2=\mu_2+\sigma_2 r\sin\theta\) el jacobiano es \(\sigma_1\sigma_2 r\) y la elipse se vuelve el rectángulo \(0\le r\le\sqrt c\):</p>
+        <p>\[\begin{aligned}M&=\int_0^{2\pi}\!\!\int_0^{\sqrt c}\frac{e^{-r^2/2}}{2\pi\sigma_1\sigma_2}\,\sigma_1\sigma_2 r\,dr\,d\theta\\&=1-e^{-c/2}\approx 0{,}9500\end{aligned}\]</p>
+        <p>La región crece con r; abajo se acumula la masa \(M(r)=1-e^{-r^2/2}\).</p></div></div>
+      <div class="step"><div class="card"><p class="n">Paso 2 · campo y normales</p><h3>F = ∇E<sub>d</sub> apunta hacia afuera</h3>
+        <p>Sobre el contorno C, orientado en sentido antihorario, la normal exterior unitaria es proporcional a \(\langle b\cos t,\ a\sin t\rangle\). La divergencia del campo es el laplaciano y resulta constante:</p>
+        <p>\[\nabla\!\cdot\!\vec F=\Delta E_d=\frac{2}{\sigma_1^2}+\frac{2}{\sigma_2^2}\approx1{,}2841\]</p></div></div>
+      <div class="step"><div class="card"><p class="n">Paso 3 · Teorema de Green</p><h3>Dos caminos, el mismo flujo</h3>
+        <p>\[\begin{aligned}\Phi&=\oint_C\vec F\cdot\vec n\,ds=\iint_R\nabla\!\cdot\!\vec F\,dA\\&=1{,}2841\times\pi ab\approx76{,}3133\end{aligned}\]</p>
+        <p>La figura acumula la integral de contorno a medida que t recorre la frontera. Llega a 76,3133, el mismo valor que divergencia por área; la diferencia es del orden de 10⁻¹⁴.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESULTADOS ============ -->
+<section id="resultados" class="rule">
+  <p class="eyebrow">Evaluación sobre el dataset completo</p>
+  <h2 style="max-width:16ch">Qué detecta la elipse</h2>
+  <p style="margin-top:1.4rem">Regla de decisión: una transacción es alerta si \(E_d>5{,}991\). Conteos sobre las 284.807 filas.</p>
+  <div class="bars">
+    <div class="bar"><div class="lbl"><span>Legítimas · 284.315</span><span>11.743 falsas alarmas · 4,13 %</span></div>
+      <div class="track"><div class="in" style="width:95.87%">272.572 dentro · 95,87 %</div><div class="out" title="11.743 legítimas fuera de la elipse"></div></div></div>
+    <div class="bar"><div class="lbl"><span>Fraudes · 492</span><span>47,56 % detectado</span></div>
+      <div class="track"><div class="in" style="width:52.44%">258 dentro · 52,44 %</div><div class="out">234 fuera · 47,56 %</div></div></div>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Categoría</th><th>Dentro (E<sub>d</sub> ≤ c)</th><th>Fuera (E<sub>d</sub> &gt; c)</th><th>Total</th></tr></thead>
+    <tbody>
+      <tr><td>Legítimas</td><td>272.572</td><td>11.743</td><td>284.315</td></tr>
+      <tr><td>Fraudes</td><td>258</td><td>234</td><td>492</td></tr>
+      <tr><td><strong>Total</strong></td><td>272.830</td><td>11.977</td><td>284.807</td></tr>
+    </tbody></table></div>
+  <dl class="metrics" id="metrics"></dl>
+  <div class="callout warn" style="margin-top:2rem">
+    <p><strong>Filtro, no bloqueador.</strong> De cada 100 alertas, unas 98 son operaciones legítimas inusuales. Además, 258 de los 492 fraudes se comportan como compras normales en V₁ y V₂ y solo se separarían con más de las 28 componentes disponibles. La elipse sirve como primer nivel de revisión.</p>
+  </div>
+  <p style="color:var(--muted);font-size:.92rem">La masa teórica es 95,00 % y empíricamente cae el 95,87 % de las legítimas: la diferencia refleja que V₁ y V₂ no son exactamente normales ni independientes.</p>
+</section>
+
+<!-- ============ CIERRE ============ -->
+<section id="cierre" class="rule">
+  <p class="eyebrow">Conclusiones</p>
+  <h2 style="max-width:14ch">Qué se logró y qué sigue</h2>
+  <div class="cols" style="margin-top:2rem">
+    <ol class="concl">
+      <li>Se cubrieron las tres unidades de Cálculo II sobre un problema real de ciencia de datos.</li>
+      <li>El centroide es el único mínimo global estricto de \(E_d\), por derivadas parciales y hessiana.</li>
+      <li>La frontera quedó parametrizada por \(\vec r(t)\), con curvatura entre 0,1795 y 0,2945 y longitud 27,4671.</li>
+      <li>La masa teórica (95,00 %) se verificó por integración doble y el flujo \(\Phi\approx76{,}3133\) por Green.</li>
+    </ol>
+    <div>
+      <h3>Propuestas de mejora</h3>
+      <ul style="padding-left:1.2rem;max-width:56ch;margin-top:.8rem">
+        <li>Pasar a tres o más dimensiones con la formulación matricial completa de Mahalanobis.</li>
+        <li>Usar estimación de densidad por núcleos (KDE) para una frontera que siga la asimetría real de los datos.</li>
+      </ul>
+      <p style="margin-top:1.6rem"><a class="btn" href="informe.pdf" target="_blank" rel="noopener">Abrir informe completo (PDF)</a></p>
+    </div>
+  </div>
+
+  <h3 style="margin:3.4rem 0 1.2rem">Gráficos del informe</h3>
+  <div class="gallery">
+    <figure class="shot"><img src="img/grafico_1.jpg" alt="Gráfico 1: datos y frontera" loading="lazy" width="1600" height="1274"><figcaption>1 · Datos y frontera de normalidad</figcaption></figure>
+    <figure class="shot"><img src="img/grafico_2.jpg" alt="Gráfico 2: curvatura y tangentes" loading="lazy" width="1600" height="677"><figcaption>2 · Tangentes y perfil de curvatura</figcaption></figure>
+    <figure class="shot"><img src="img/grafico_3.jpg" alt="Gráfico 3: curvas de nivel y gradiente" loading="lazy" width="1600" height="1274"><figcaption>3 · Curvas de nivel y campo gradiente</figcaption></figure>
+    <figure class="shot"><img src="img/grafico_4.jpg" alt="Gráfico 4: región, campo y normales" loading="lazy" width="1600" height="1275"><figcaption>4 · Región, campo F y normales exteriores</figcaption></figure>
+  </div>
+</section>
+
+<footer>
+  <p class="eyebrow">Grupo N.º 2</p>
+  <ul class="people">
+    <li>ADARO, Marcelo</li><li>FUNES, Samanta Celeste</li><li>GIL, Inés</li><li>GUIÑAZÚ, Leandro Sebastián</li><li>LEDEZMA, Ricardo Mariano</li>
+  </ul>
+  <p>Universidad Nacional de San Luis · Facultad de Ciencias Físico Matemáticas y Naturales · San Luis, Argentina. Referencias: Stewart, J. (2012), <em>Cálculo de varias variables</em>, 7.ª ed.; Thomas, G. B. (2015), <em>Cálculo: varias variables</em>, 13.ª ed.</p>
+</footer>
+</div>
+
+<script>
+window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js" async></script>
+<script>
+(function(){
+'use strict';
+const TAU=Math.PI*2, $=(s,r=document)=>r.querySelector(s);
+const fmt=(x,d=2)=>x.toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+
+/* ---------- modelo (mismos parámetros que resumen_calculos.pdf) ---------- */
+const P={mu1:0.00825773748556369,mu2:-0.00627085741580707,s1:1.92981405165008,s2:1.63614605256896,c:5.991};
+P.sc=Math.sqrt(P.c);P.a=P.s1*P.sc;P.b=P.s2*P.sc;
+const E=(x,y)=>((x-P.mu1)/P.s1)**2+((y-P.mu2)/P.s2)**2;
+const grad=(x,y)=>[2*(x-P.mu1)/P.s1**2,2*(y-P.mu2)/P.s2**2];
+const rr=t=>[P.mu1+P.a*Math.cos(t),P.mu2+P.b*Math.sin(t)];
+const vv=t=>[-P.a*Math.sin(t),P.b*Math.cos(t)];
+const kap=t=>P.a*P.b/Math.pow(P.a**2*Math.sin(t)**2+P.b**2*Math.cos(t)**2,1.5);
+const nout=t=>{const x=P.b*Math.cos(t),y=P.a*Math.sin(t),n=Math.hypot(x,y);return[x/n,y/n]};
+const kmax=P.a/P.b**2,kmin=P.b/P.a**2,div=2/P.s1**2+2/P.s2**2,area=Math.PI*P.a*P.b,masa=1-Math.exp(-P.c/2);
+const N=1600,S=new Float64Array(N+1),FL=new Float64Array(N+1);
+const speed=t=>Math.hypot(...vv(t));
+const fint=t=>{const [x,y]=rr(t),g=grad(x,y);return g[0]*P.b*Math.cos(t)+g[1]*P.a*Math.sin(t)};
+for(let i=1;i<=N;i++){const t0=(i-1)*TAU/N,t1=i*TAU/N,h=t1-t0;S[i]=S[i-1]+h*(speed(t0)+speed(t1))/2;FL[i]=FL[i-1]+h*(fint(t0)+fint(t1))/2}
+const L=S[N],FLUJO=FL[N];
+const at=(arr,t)=>{const u=clamp(t/TAU)*N,i=Math.min(N-1,Math.floor(u));return arr[i]+(arr[i+1]-arr[i])*(u-i)};
+
+/* ---------- colores / tema ---------- */
+const C={};
+function readColors(){const s=getComputedStyle(document.documentElement);['bg','surface','ink','muted','line','normal','alert','gold'].forEach(k=>C[k]=s.getPropertyValue('--'+k).trim())}
+readColors();
+
+/* ---------- helpers de dibujo ---------- */
+function mkView(rc,hw,hh){const sc=Math.min(rc.w/(2*hw),rc.h/(2*hh)),cx=rc.x+rc.w/2,cy=rc.y+rc.h/2;
+  return{sc,X:x=>cx+(x-P.mu1)*sc,Y:y=>cy-(y-P.mu2)*sc,iX:px=>P.mu1+(px-cx)/sc,iY:py=>P.mu2-(py-cy)/sc,rc}}
+function ellipsePath(g,v,k,t0=0,t1=TAU){const q=Math.sqrt(k);g.beginPath();const n=Math.max(8,Math.ceil(240*(t1-t0)/TAU));
+  for(let i=0;i<=n;i++){const t=t0+(t1-t0)*i/n,x=v.X(P.mu1+P.s1*q*Math.cos(t)),y=v.Y(P.mu2+P.s2*q*Math.sin(t));i?g.lineTo(x,y):g.moveTo(x,y)}}
+function arrow(g,x0,y0,x1,y1,col,w=2,hd=8){const dx=x1-x0,dy=y1-y0,l=Math.hypot(dx,dy);if(l<1)return;g.strokeStyle=col;g.fillStyle=col;g.lineWidth=w;g.lineCap='round';
+  const ux=dx/l,uy=dy/l,h=Math.min(hd,l*.6);g.beginPath();g.moveTo(x0,y0);g.lineTo(x1-ux*h*.7,y1-uy*h*.7);g.stroke();
+  g.beginPath();g.moveTo(x1,y1);g.lineTo(x1-ux*h-uy*h*.45,y1-uy*h+ux*h*.45);g.lineTo(x1-ux*h+uy*h*.45,y1-uy*h-ux*h*.45);g.closePath();g.fill()}
+function dot(g,x,y,r,col,ring=true){g.beginPath();g.arc(x,y,r,0,TAU);g.fillStyle=col;g.fill();if(ring){g.lineWidth=2;g.strokeStyle=C.surface;g.stroke()}}
+function star(g,x,y,r){g.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rad=i%2?r*.45:r;g.lineTo(x+rad*Math.cos(a),y+rad*Math.sin(a))}g.closePath();g.fillStyle=C.gold;g.fill();g.lineWidth=1;g.strokeStyle=C.ink;g.stroke()}
+function label(g,txt,x,y,col=C.muted,al='left',sz=11){g.font=`${sz}px "IBM Plex Mono",ui-monospace,monospace`;g.fillStyle=col;g.textAlign=al;g.textBaseline='middle';g.fillText(txt,x,y)}
+function grid(g,v){g.lineWidth=1;g.strokeStyle=C.line;g.globalAlpha=.55;const rc=v.rc;g.beginPath();
+  for(let x=-12;x<=12;x+=2){const px=v.X(x);if(px>rc.x&&px<rc.x+rc.w){g.moveTo(px,rc.y);g.lineTo(px,rc.y+rc.h)}}
+  for(let y=-12;y<=12;y+=2){const py=v.Y(y);if(py>rc.y&&py<rc.y+rc.h){g.moveTo(rc.x,py);g.lineTo(rc.x+rc.w,py)}}g.stroke();g.globalAlpha=1;
+  g.strokeStyle=C.muted;g.globalAlpha=.6;g.beginPath();g.moveTo(rc.x,v.Y(0));g.lineTo(rc.x+rc.w,v.Y(0));g.moveTo(v.X(0),rc.y);g.lineTo(v.X(0),rc.y+rc.h);g.stroke();g.globalAlpha=1;
+  label(g,'V₁',rc.x+rc.w-4,v.Y(0)-9,C.muted,'right');label(g,'V₂',v.X(0)+6,rc.y+8,C.muted,'left')}
+/* gráfico pequeño inferior */
+function chart(g,rc,o){const {x0,x1,y0,y1}=o,X=x=>rc.x+(x-x0)/(x1-x0)*rc.w,Y=y=>rc.y+rc.h-(y-y0)/(y1-y0)*rc.h;
+  g.strokeStyle=C.line;g.lineWidth=1;g.strokeRect(rc.x,rc.y,rc.w,rc.h);
+  (o.hl||[]).forEach(h=>{g.setLineDash([4,4]);g.strokeStyle=h.col||C.muted;g.beginPath();g.moveTo(rc.x,Y(h.y));g.lineTo(rc.x+rc.w,Y(h.y));g.stroke();g.setLineDash([]);label(g,h.t,rc.x+rc.w-4,Y(h.y)-8,h.col||C.muted,'right',10)});
+  (o.series||[]).forEach(s=>{g.beginPath();g.lineWidth=2;g.strokeStyle=s.col;const n=160;for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n,y=s.f(x);i?g.lineTo(X(x),Y(y)):g.moveTo(X(x),Y(y))}g.stroke()});
+  (o.ticks||[]).forEach(t=>{label(g,t[1],X(t[0]),rc.y+rc.h+11,C.muted,'center',10)});
+  if(o.title)label(g,o.title,rc.x+6,rc.y+10,C.muted,'left',10);
+  if(o.m!=null&&o.my!=null){g.strokeStyle=C.alert;g.globalAlpha=.5;g.setLineDash([3,3]);g.beginPath();g.moveTo(X(o.m),rc.y);g.lineTo(X(o.m),rc.y+rc.h);g.stroke();g.setLineDash([]);g.globalAlpha=1;dot(g,X(o.m),Y(o.my),5,C.alert)}}
+const PIT=[[0,'0'],[Math.PI/2,'π/2'],[Math.PI,'π'],[3*Math.PI/2,'3π/2'],[TAU,'2π']];
+
+/* ---------- figura base ---------- */
+class Fig{
+  constructor(id,rid,tagid,draw){this.cv=$('#'+id);this.g=this.cv.getContext('2d');this.ro=$('#'+rid);this.tag=$('#'+tagid);this.draw=draw;this.st={i:0,q:0};this.last='';this.hover=null;
+    new ResizeObserver(()=>this.resize()).observe(this.cv);this.resize()}
+  resize(){const r=this.cv.getBoundingClientRect(),d=Math.min(window.devicePixelRatio||1,2);this.w=r.width;this.h=r.height;
+    this.cv.width=Math.max(1,Math.round(r.width*d));this.cv.height=Math.max(1,Math.round(r.height*d));this.g.setTransform(d,0,0,d,0,0);this.render()}
+  layout(){const w=this.w,h=this.h,ch=Math.max(70,Math.min(150,h*.27)),pad=Math.min(14,w*.03);
+    return{main:{x:0,y:0,w:w,h:h-ch-24},chart:{x:pad+26,y:h-ch-10,w:w-2*pad-34,h:ch-8}}}
+  render(){const g=this.g;g.clearRect(0,0,this.w,this.h);if(this.w<20)return;const out=this.draw(g,this.layout(),this.st,this);this.setRead(out.read,out.tag)}
+  setRead(r,tag){const key=JSON.stringify([r,tag]);if(key===this.last)return;this.last=key;
+    this.ro.innerHTML=r.map(([a,b,c])=>`<div><dt>${a}</dt><dd class="${c||''}">${b}</dd></div>`).join('');if(tag)this.tag.textContent=tag}
+}
+
+/* ---------- Figura 1: r(t) ---------- */
+const F1=new Fig('c1','r1','s1tag',(g,lo,s)=>{
+  const {main,chart:cr}=lo,v=mkView(main,1.32*P.a,1.28*P.b),t=TAU*s.q,[px,py]=rr(t);
+  grid(g,v);
+  ellipsePath(g,v,P.c);g.strokeStyle=s.i===0?C.line:C.muted;g.lineWidth=s.i===0?1.5:1.5;g.setLineDash(s.i===0?[3,5]:[]);g.globalAlpha=s.i===3?.45:1;g.stroke();g.setLineDash([]);g.globalAlpha=1;
+  const tr=(s.i===0||s.i===3);if(tr&&t>0){ellipsePath(g,v,P.c,0,t);g.strokeStyle=s.i===3?C.alert:C.normal;g.lineWidth=3.5;g.stroke()}
+  star(g,v.X(P.mu1),v.Y(P.mu2),9);
+  if(s.i===1){const vx=vv(t),n=Math.hypot(...vx),Lw=.55*Math.min(P.a,P.b),ax=-(px-P.mu1),ay=-(py-P.mu2);
+    arrow(g,v.X(px),v.Y(py),v.X(px+vx[0]/n*Lw),v.Y(py+vx[1]/n*Lw),C.normal,3);
+    arrow(g,v.X(px),v.Y(py),v.X(px+ax*.4),v.Y(py+ay*.4),C.alert,3);
+    label(g,'v',v.X(px+vx[0]/n*Lw)+8,v.Y(py+vx[1]/n*Lw)-6,C.normal,'left',13);label(g,'a',v.X(px+ax*.4)+6,v.Y(py+ay*.4)+10,C.alert,'left',13)}
+  if(s.i===2){const R=1/kap(t),no=nout(t),cx=px-no[0]*R,cy=py-no[1]*R;g.beginPath();g.arc(v.X(cx),v.Y(cy),R*v.sc,0,TAU);g.setLineDash([5,5]);g.strokeStyle=C.alert;g.lineWidth=1.8;g.stroke();g.setLineDash([]);
+    g.beginPath();g.moveTo(v.X(px),v.Y(py));g.lineTo(v.X(cx),v.Y(cy));g.strokeStyle=C.alert;g.globalAlpha=.6;g.lineWidth=1;g.stroke();g.globalAlpha=1;dot(g,v.X(cx),v.Y(cy),3,C.alert,false)}
+  dot(g,v.X(px),v.Y(py),6.5,C.alert);
+  let read,ch;
+  if(s.i===0){ch={x0:0,x1:TAU,y0:-1.15*P.a,y1:1.15*P.a,series:[{f:x=>P.a*Math.cos(x),col:C.normal},{f:x=>P.b*Math.sin(x),col:C.alert}],ticks:PIT,title:'x(t) − μ₁ (verde)   y(t) − μ₂ (naranja)',m:t,my:P.a*Math.cos(t)};
+    read=[['t (rad)',fmt(t,3)],['x(t)',fmt(px,3)],['y(t)',fmt(py,3)]]}
+  else if(s.i===1){ch={x0:0,x1:TAU,y0:0,y1:1.2*Math.max(P.a,P.b),series:[{f:speed,col:C.normal}],ticks:PIT,title:'rapidez ‖v(t)‖',m:t,my:speed(t)};
+    const a=Math.hypot(px-P.mu1,py-P.mu2);read=[['t (rad)',fmt(t,3)],['‖v(t)‖',fmt(speed(t),4)],['‖a(t)‖',fmt(a,4)]]}
+  else if(s.i===2){ch={x0:0,x1:TAU,y0:0,y1:.34,series:[{f:kap,col:C.alert}],ticks:PIT,title:'curvatura κ(t)',hl:[{y:kmax,t:'κ máx '+fmt(kmax,4)},{y:kmin,t:'κ mín '+fmt(kmin,4)}],m:t,my:kap(t)};
+    read=[['κ(t)',fmt(kap(t),5)],['radio 1/κ',fmt(1/kap(t),3)],['κ máx / mín',fmt(kmax,3)+' / '+fmt(kmin,3)]]}
+  else{const sv=at(S,t);ch={x0:0,x1:TAU,y0:0,y1:L*1.1,series:[{f:x=>at(S,x),col:C.normal}],ticks:PIT,title:'longitud recorrida s(t)',hl:[{y:L,t:'L = '+fmt(L,4)}],m:t,my:sv};
+    read=[['s(t)',fmt(sv,4)],['L total',fmt(L,4)],['recorrido',fmt(sv/L*100,1)+' %']]}
+  chart(g,cr,ch);return{read,tag:['r(t)','v(t) · a(t)','κ(t)','L'][s.i]}
+});
+
+/* ---------- Figura 2: E_d ---------- */
+const LV=[1,2,3,4,P.c,8,10];
+const F2=new Fig('c2','r2','s2tag',(g,lo,s,f)=>{
+  const {main,chart:cr}=lo,v=mkView(main,1.3*P.a,1.28*P.b);f.v=v;f.lo=lo;
+  grid(g,v);
+  const nshow=s.i===0?Math.max(1,Math.ceil(s.q*LV.length-1e-9)):LV.length;
+  // relleno de la región de normalidad
+  ellipsePath(g,v,P.c);g.fillStyle=C.normal;g.globalAlpha=.1;g.fill();g.globalAlpha=1;
+  LV.slice(0,nshow).forEach((k,j)=>{const isc=k===P.c;ellipsePath(g,v,k);g.lineWidth=isc?2.6:1.4;g.strokeStyle=isc?C.ink:C.muted;g.globalAlpha=isc?1:.8;g.setLineDash(isc?[7,5]:[]);g.stroke();g.setLineDash([]);g.globalAlpha=1;
+    const t=-.62,x=v.X(P.mu1+P.s1*Math.sqrt(k)*Math.cos(t)),y=v.Y(P.mu2+P.s2*Math.sqrt(k)*Math.sin(t));label(g,isc?'c = 5,991':'E = '+fmt(k,0),x+4,y+8,isc?C.ink:C.muted,'left',10)});
+  star(g,v.X(P.mu1),v.Y(P.mu2),9);
+  let P_=null,read,ch,Eq=null;
+  const mode=s.i;
+  const fieldPts=()=>{const out=[];for(let ix=-6;ix<=6;ix++)for(let iy=-4;iy<=4;iy++){const x=P.mu1+ix*P.a*.19,y=P.mu2+iy*P.b*.25;if(ix===0&&iy===0)continue;out.push([x,y])}return out};
+  if(mode===1||mode===3){
+    let ro,pt;
+    if(f.hover&&v.iX){const hx=v.iX(f.hover[0]),hy=v.iY(f.hover[1]);pt=[hx,hy]}
+    else{const rho=mode===1?.12+1.18*s.q:1.25*(1-s.q),ph=35*Math.PI/180;pt=[P.mu1+rho*P.a*Math.cos(ph),P.mu2+rho*P.b*Math.sin(ph)]}
+    P_=pt}
+  if(mode===2)P_=[P.mu1+P.a,P.mu2];
+  if(mode===1){g.globalAlpha=.55;fieldPts().forEach(([x,y])=>{const gr=grad(x,y),n=Math.hypot(...gr)||1,l=.42*P.a*.19*v.sc;const px=v.X(x),py=v.Y(y);arrow(g,px-gr[0]/n*l*.5,py+gr[1]/n*l*.5,px+gr[0]/n*l*.5,py-gr[1]/n*l*.5,C.alert,1.3,5)});g.globalAlpha=1}
+  if(mode===3){g.globalAlpha=.35;fieldPts().forEach(([x,y])=>{const gr=grad(x,y),n=Math.hypot(...gr)||1,l=.42*P.a*.19*v.sc;const px=v.X(x),py=v.Y(y);arrow(g,px-gr[0]/n*l*.5,py+gr[1]/n*l*.5,px+gr[0]/n*l*.5,py-gr[1]/n*l*.5,C.alert,1.1,4)});g.globalAlpha=1}
+  if(P_){const [x,y]=P_,gr=grad(x,y),gn=Math.hypot(...gr),px=v.X(x),py=v.Y(y),Lg=Math.min(.34*Math.min(main.w,main.h),gn*34);
+    if(mode===1&&gn>0){const tx=-gr[1]/gn,ty=gr[0]/gn,tl=22;g.beginPath();g.moveTo(px-tx*tl,py+ty*tl);g.lineTo(px+tx*tl,py-ty*tl);g.strokeStyle=C.ink;g.lineWidth=2;g.stroke()}
+    if(gn>0)arrow(g,px,py,px+gr[0]/gn*Lg,py-gr[1]/gn*Lg,C.alert,3.5,11);
+    if(mode===2){const ph=TAU*s.q,u=[Math.cos(ph),Math.sin(ph)],Lu=.2*Math.min(main.w,main.h);
+      arrow(g,px,py,px+u[0]*Lu,py-u[1]*Lu,C.normal,3.5,11);
+      // proyección
+      const D=gr[0]*u[0]+gr[1]*u[1],pr=D/gn;g.setLineDash([4,4]);g.strokeStyle=C.muted;g.lineWidth=1.2;g.beginPath();g.moveTo(px+u[0]*Lu,py-u[1]*Lu);g.lineTo(px+Math.sign(gr[0])*Math.abs(pr*Lu)*1,py);g.stroke();g.setLineDash([]);
+      label(g,'u',px+u[0]*Lu+8,py-u[1]*Lu-8,C.normal,'left',13)}
+    dot(g,px,py,6.5,C.alert);
+    Eq=E(x,y)}
+  const dentro=Eq!=null&&Eq<=P.c+1e-9;
+  if(mode===0){ch={x0:0,x1:1.3,y0:0,y1:1.3*1.3*P.c,series:[{f:r=>r*r*P.c,col:C.normal}],hl:[{y:P.c,t:'c = 5,991'}],ticks:[[0,'0'],[.5,'0,5'],[1,'1'],[1.3,'1,3']],title:'E_d a lo largo de un rayo, ρ = distancia / semieje'};
+    read=[['Niveles',String(nshow)+' de '+LV.length],['E_d(μ)','0,0000','ok'],['Umbral c','5,9910']]}
+  else if(mode===1||mode===3){const gr=grad(...P_),rho=Math.sqrt(Eq/P.c);
+    ch={x0:0,x1:1.3,y0:0,y1:1.3*1.3*P.c,series:[{f:r=>r*r*P.c,col:C.normal}],hl:[{y:P.c,t:'c = 5,991'}],ticks:[[0,'0'],[.5,'0,5'],[1,'1'],[1.3,'1,3']],title:'E_d a lo largo del rayo (ρ)',m:Math.min(rho,1.3),my:Math.min(Eq,1.3*1.3*P.c)};
+    read=[['E_d',fmt(Eq,4),dentro?'ok':'hot'],['∇E_d',`(${fmt(gr[0],3)} ; ${fmt(gr[1],3)})`],['Estado',Math.abs(Eq-P.c)<.01?'sobre la frontera':dentro?'dentro · normal':'fuera · alerta',dentro?'ok':'hot']];
+    if(mode===3)read[2]=['H · det H','diag(0,537; 0,747) · 0,401']}
+  else{const gr=grad(...P_),ph=TAU*s.q,D=gr[0]*Math.cos(ph)+gr[1]*Math.sin(ph),gn=Math.hypot(...gr);
+    ch={x0:0,x1:TAU,y0:-gn*1.2,y1:gn*1.2,series:[{f:x=>gn*Math.cos(x),col:C.normal}],ticks:PIT,hl:[{y:0,t:''}],title:'D_u E_d en función del ángulo de u',m:ph,my:D};
+    read=[['ángulo de u',fmt(ph*180/Math.PI,0)+'°'],['D_u E_d',fmt(D,4),D>0?'ok':'hot'],['‖∇E_d‖ (máx.)',fmt(gn,4)]]}
+  chart(g,cr,ch);return{read,tag:['curvas de nivel','gradiente','derivada direccional','hessiana'][s.i]}
+});
+F2.cv.addEventListener('pointermove',e=>{if(F2.st.i===1||F2.st.i===3){const r=F2.cv.getBoundingClientRect();F2.hover=[e.clientX-r.left,e.clientY-r.top];if(F2.lo&&F2.hover[1]>F2.lo.main.h)F2.hover=null;F2.render()}});
+F2.cv.addEventListener('pointerleave',()=>{F2.hover=null;F2.render()});
+
+/* ---------- Figura 3: región, masa, flujo ---------- */
+const F3=new Fig('c3','r3','s3tag',(g,lo,s)=>{
+  const {main,chart:cr}=lo,v=mkView(main,1.32*P.a,1.28*P.b);
+  grid(g,v);
+  const rmax=s.i===0?P.sc*Math.max(.02,s.q):P.sc;
+  // grilla polar generalizada
+  if(s.i===0){g.globalAlpha=.7;[1,2].forEach(r=>{ellipsePath(g,v,r*r);g.strokeStyle=C.line;g.lineWidth=1;g.stroke()});
+    g.beginPath();for(let j=0;j<12;j++){const th=j*TAU/12;g.moveTo(v.X(P.mu1),v.Y(P.mu2));g.lineTo(v.X(P.mu1+P.a*Math.cos(th)),v.Y(P.mu2+P.b*Math.sin(th)))}g.strokeStyle=C.line;g.stroke();g.globalAlpha=1}
+  ellipsePath(g,v,rmax*rmax);g.fillStyle=C.normal;g.globalAlpha=s.i===0?.28:.16;g.fill();g.globalAlpha=1;g.strokeStyle=C.ink;g.lineWidth=2.4;g.stroke();
+  if(s.i===0){ellipsePath(g,v,P.c);g.strokeStyle=C.muted;g.setLineDash([4,5]);g.lineWidth=1;g.stroke();g.setLineDash([])}
+  star(g,v.X(P.mu1),v.Y(P.mu2),9);
+  const t=TAU*s.q;
+  if(s.i>=1){const al=s.i===1?clamp(s.q*2.4):1,sub=s.i===1?1:.55;g.globalAlpha=al*sub;
+    const k=.62*(2*P.a/14)/(2*P.sc/P.s1);
+    for(let ix=-6;ix<=6;ix++)for(let iy=-5;iy<=5;iy++){const x=P.mu1+ix*P.a/7,y=P.mu2+iy*P.b/5.6;if(E(x,y)>P.c*.96||(ix===0&&iy===0))continue;const gr=grad(x,y);
+      arrow(g,v.X(x),v.Y(y),v.X(x+gr[0]*k*1.6),v.Y(y+gr[1]*k*1.6),C.alert,1.4,5)}
+    g.globalAlpha=1;
+    if(s.i===1){g.globalAlpha=al;for(let j=0;j<12;j++){const th=j*TAU/12,[x,y]=rr(th),n=nout(th);arrow(g,v.X(x),v.Y(y),v.X(x+n[0]*.9),v.Y(y+n[1]*.9),C.gold,3,10)}g.globalAlpha=1;
+      const [x,y]=rr(Math.PI/4),vx=vv(Math.PI/4),nn=Math.hypot(...vx);arrow(g,v.X(x),v.Y(y),v.X(x+vx[0]/nn*1.1),v.Y(y+vx[1]/nn*1.1),C.normal,4,12);label(g,'C, sentido antihorario',v.X(x)+10,v.Y(y)-16,C.normal,'left',10.5)}}
+  if(s.i===2){ellipsePath(g,v,P.c,0,t);g.strokeStyle=C.alert;g.lineWidth=4;g.stroke();
+    const [x,y]=rr(t),n=nout(t),gr=grad(x,y),gl=.6;arrow(g,v.X(x),v.Y(y),v.X(x+n[0]*1.1),v.Y(y+n[1]*1.1),C.gold,3.5,11);
+    const gn=Math.hypot(...gr);arrow(g,v.X(x),v.Y(y),v.X(x+gr[0]/gn*1.8),v.Y(y+gr[1]/gn*1.8),C.alert,2.5,9);dot(g,v.X(x),v.Y(y),6,C.alert)}
+  let read,ch;
+  if(s.i===0){const r=rmax,M=1-Math.exp(-r*r/2);ch={x0:0,x1:3.2,y0:0,y1:100,series:[{f:x=>100*(1-Math.exp(-x*x/2)),col:C.normal}],hl:[{y:95,t:'95 %'}],ticks:[[0,'0'],[1,'1'],[2,'2'],[P.sc,'√c'],[3,'3']],title:'masa acumulada M(r) en %',m:r,my:100*M};
+    read=[['radio r',fmt(r,3)],['M(r)',fmt(100*M,3)+' %',s.q>.98?'ok':''],['Área de la región',fmt(Math.PI*P.s1*P.s2*r*r,2)]]}
+  else if(s.i===1){ch={x0:0,x1:TAU,y0:0,y1:2.6*P.a*P.b*.6,series:[{f:fint,col:C.alert}],ticks:PIT,title:'integrando F·n ds/dt sobre C',title2:''};
+    read=[['div F = ΔE_d',fmt(div,6)],['Área(R) = πab',fmt(area,4)],['div F × Área',fmt(div*area,4)]]}
+  else{const ph=at(FL,t);ch={x0:0,x1:TAU,y0:0,y1:FLUJO*1.12,series:[{f:x=>at(FL,x),col:C.alert}],hl:[{y:FLUJO,t:'Φ = '+fmt(FLUJO,4)}],ticks:PIT,title:'flujo acumulado Φ(t)',m:t,my:ph};
+    read=[['Φ(t) contorno',fmt(ph,4)],['Φ total contorno',fmt(FLUJO,4)],['div F × Área',fmt(div*area,4),'ok']]}
+  chart(g,cr,ch);return{read,tag:['masa M','campo y normales','flujo de Green'][s.i]}
+});
+
+/* ---------- scroll: paso activo y progreso ---------- */
+const figs=[[ $('#s1'),F1],[ $('#s2'),F2],[ $('#s3'),F3]].map(([el,f])=>({el,f,steps:[...el.querySelectorAll('.step')],stage:el.querySelector('.stage')}));
+function update(){
+  const vh=window.innerHeight,mobile=window.matchMedia('(max-width:900px)').matches;
+  figs.forEach(o=>{
+    const sb=o.stage.getBoundingClientRect().bottom;
+    let i=0,q=0;
+    if(mobile){const yt=sb+14;
+      o.steps.forEach((s,k)=>{const r=s.getBoundingClientRect(),ch=s.querySelector('.card').offsetHeight;if(r.top<=yt+ch*.5){i=k;q=clamp((yt-r.top)/Math.max(40,r.height-ch))}})}
+    else{const yt=vh*.5;o.steps.forEach((s,k)=>{const r=s.getBoundingClientRect();if(r.top<=yt){i=k;q=clamp((yt-r.top)/r.height)}})}
+    const secR=o.el.getBoundingClientRect();if(secR.bottom<0||secR.top>vh){return}
+    o.steps.forEach((s,k)=>s.classList.toggle('on',k===i));
+    const stt=o.f.st;
+    if(stt.i!==i||Math.abs(stt.q-q)>.0015){stt.i=i;stt.q=q;o.f.render()}
+  })
+}
+let tick=false;const sched=()=>{if(!tick){tick=true;requestAnimationFrame(()=>{tick=false;update()})}};
+addEventListener('scroll',sched,{passive:true});addEventListener('resize',sched);
+
+/* ---------- métricas ---------- */
+const cm={tn:272572,fp:11743,fn:258,tp:234};
+(function(){const rec=cm.tp/(cm.tp+cm.fn),esp=cm.tn/(cm.tn+cm.fp),pre=cm.tp/(cm.tp+cm.fp),f1=2*pre*rec/(pre+rec),fpr=cm.fp/(cm.tn+cm.fp);
+  const it=[['Sensibilidad',fmt(rec*100,2)+' %','234 / 492',''],['Especificidad',fmt(esp*100,2)+' %','',''],['Falsos positivos',fmt(fpr*100,2)+' %','11.743 / 284.315',''],['Precisión',fmt(pre*100,2)+' %','234 / 11.977','hot'],['F₁',fmt(f1*100,2)+' %','','']];
+  $('#metrics').innerHTML=it.map(([a,b,c,h])=>`<div><dt>${a}</dt><dd class="${h}">${b}${c?`<small>${c}</small>`:''}</dd></div>`).join('')})();
+
+/* ---------- hero ---------- */
+const hero=$('#hero'),hg=hero.getContext('2d');let hp=1,hpts=null;
+function seeded(){let s=7;return()=>(s=(s*16807)%2147483647)/2147483647}
+function heroDraw(){const r=hero.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);if(r.width<10)return;hero.width=r.width*d;hero.height=r.height*d;hg.setTransform(d,0,0,d,0,0);hg.clearRect(0,0,r.width,r.height);
+  const v=mkView({x:0,y:0,w:r.width,h:r.height},1.45*P.a,1.45*P.a);
+  if(!hpts){const rnd=seeded();hpts=[];for(let i=0;i<1500;i++){const u=rnd(),w=rnd(),R=Math.sqrt(-2*Math.log(u+1e-9)),x=P.mu1+P.s1*R*Math.cos(TAU*w),y=P.mu2+P.s2*R*Math.sin(TAU*w);hpts.push([x,y])}}
+  hpts.forEach(([x,y],i)=>{if(i/hpts.length>hp)return;const out=E(x,y)>P.c;hg.fillStyle=out?C.alert:C.normal;hg.globalAlpha=out?.85:.35;hg.beginPath();hg.arc(v.X(x),v.Y(y),out?2.6:2,0,TAU);hg.fill()});hg.globalAlpha=1;
+  ellipsePath(hg,v,P.c,0,TAU*Math.min(1,hp*1.2));hg.strokeStyle=C.ink;hg.lineWidth=2.6;hg.stroke();star(hg,v.X(P.mu1),v.Y(P.mu2),10)}
+function heroAnim(){if(matchMedia('(prefers-reduced-motion: reduce)').matches){hp=1;heroDraw();return}
+  hp=0;const t0=performance.now();(function f(n){hp=clamp((n-t0)/1600);heroDraw();if(hp<1)requestAnimationFrame(f)})(t0)}
+new ResizeObserver(()=>heroDraw()).observe(hero);heroAnim();
+
+/* ---------- tema ---------- */
+function themeChange(){readColors();heroDraw();figs.forEach(o=>{o.f.last='';o.f.render()})}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',themeChange);
+new MutationObserver(themeChange).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+/* ---------- nav activa ---------- */
+const links=[...document.querySelectorAll('nav a')],secs=links.map(a=>$(a.getAttribute('href')));
+function nav(){const y=innerHeight*.35;let k=-1;secs.forEach((s,j)=>{if(s.getBoundingClientRect().top<=y)k=j});links.forEach((a,j)=>a.classList.toggle('on',j===k))}
+addEventListener('scroll',nav,{passive:true});nav();
+(document.fonts&&document.fonts.ready||Promise.resolve()).then(()=>{update();figs.forEach(o=>o.f.render())});
+update();
+window.__chk={L,FLUJO,div,area,masa,kmax,kmin};
+})();
+</script>
+
+</html>

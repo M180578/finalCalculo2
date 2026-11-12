@@ -2,14 +2,16 @@
 
 Frontera de normalidad y dinámica multivariable del error en el plano (V₁, V₂) — detección de fraude.
 
-## Ejecutar
+🌐 **App en línea:** [Ver aplicación en Streamlit](https://finalcalculo2-qvy9ybulnqd3qlzxgsypwf.streamlit.app/)
+
+## Ejecutar localmente
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
 ## Datos
-El CSV (Kaggle *Credit Card Fraud Detection*, columnas `V1`, `V2`, `Class`) **no está incluido**.
+El CSV ([Kaggle *Credit Card Fraud Detection*](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud), columnas `V1`, `V2`, `Class`) **no está incluido**.
 - Copialo como `data/creditcard.csv` (la app lo detecta sola), o
 - subilo desde «Opciones», o
 - usá «Parámetros del informe (sin CSV)», que muestra todos los cálculos con los valores publicados.
